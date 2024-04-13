@@ -1,0 +1,5 @@
+ReservationID, CustomerName, Destination
+101, Catalina Carolina, Satu Mare
+102, Antonio Profu, Fundulea
+103, Daniel Tanase-Rusu, Moscova
+
