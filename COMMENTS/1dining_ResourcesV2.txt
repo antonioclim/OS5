@@ -98,7 +98,7 @@ logical schema for the script:
 Explanation:
 
 The schema shows two potential paths for Service N (any service after Service 1):
-Acquiring both locks: Similar to Service 1, Service N attempts to acquire locks on both files. If successful, it modifies the files, processes data, and releases the locks.
+Acquiring both locks: Similar to Service 1, Service N attempts to acquire locks on both files. If successful, it modifies the files, processes data and releases the locks.
 Waiting for locks: If Service N attempts to acquire a lock on a file already locked by another service (e.g., Service 1), it will wait until the lock is released 
 before acquiring it itself. This ensures only one service modifies the files at a time.
 The "" symbol indicates a potential wait state for Service N if a lock is already acquired.
