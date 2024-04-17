@@ -1,0 +1,105 @@
+
+2Producer-ConsumerNETcapture.sh
+
+
+
+This script simulates a network packet capture and analysis scenario. It demonstrates concepts like process management, background execution, file manipulation 
+and basic string searching. We'll explore how the script simulates capturing packets, analyzing them for suspicious content, and managing the capture and analysis processes.
+
+Concepts and Commands:
+
+getent passwd: Retrieves information about a user.
+cut command: Extracts specific fields from text.
+mkdir -p: Creates a directory, including any missing parent directories.
+date command: Retrieves the current date and time.
+shuf command: Generates random numbers within a specified range.
+/dev/urandom: Reads random data from the system's random number generator.
+tr command: Transforms characters in a string.
+head command: Outputs the first n lines of a file (used here to get a limited amount of random data).
+grep command: Searches for patterns within text files.
+mv command: Moves files.
+rm -rf command: Removes files or directories recursively (use with caution!).
+Background processes (&): Started processes that run concurrently with the main script.
+wait command: Waits for all background processes to finish before continuing.
+trap command: Traps signals and executes a specific function.
+kill command: Sends a signal to a process (used here with TERM signal to terminate processes).
+
+Script Logic:
+
+Configuration:
+
+Defines the network interface for capturing packets (currently unused in simulation).
+Gets the user's home directory.
+Sets base and directory paths for packet queue and analysis storage.
+Defines a runtime limit for the script execution (20 seconds).
+setup_environment function:
+
+Creates the packet_queue and packet_analysis directories if they don't exist.
+start_time variable:
+
+Captures the current timestamp at script start using date +%s.
+capture_packets function:
+
+Uses a while true loop to continuously simulate packet capture:
+Checks the current time and calculates the elapsed time since script start.
+If the runtime limit is reached, exits the loop and prints a message.
+Simulates a packet with random source and destination IP addresses and random data generated from /dev/urandom using shuf and head.
+Creates a file with a unique name for the simulated packet in the packet_queue directory.
+Prints a message indicating the captured packet and its filename.
+Introduces a short delay (sleep) to simulate the interval between packet captures.
+analyze_packets function:
+
+Uses a while true loop to continuously analyze packets from the queue:
+Checks the current time and calculates the elapsed time since script start.
+If the runtime limit is reached, exits the loop and prints a message.
+Loops through all files in the packet_queue directory.
+For each file (simulated packet):
+Checks if it's a regular file using -f.
+Simulates packet analysis by searching for the string "DATA=.*baddata" using grep.
+If suspicious content is found, prints an alert message with the packet content.
+Moves the analyzed packet to the packet_analysis directory using mv.
+Prints a message indicating the packet analysis and movement.
+Introduces a delay (sleep) to simulate the time between analyzing packets.
+cleanup function:
+
+Called on script exit using trap EXIT.
+Removes all files from both the packet_queue and analysis_dir directories using rm -rf (caution: use with care!).
+Prints a message indicating the packet queues have been cleared.
+
+Main Script Logic:
+
+Sets a trap to ensure cleanup is called when the script exits (EXIT).
+Starts the capture_packets function in the background (&) and stores its process ID (PID) in capture_pid.
+Starts the analyze_packets function in the background (&) and stores its PID in analyze_pid.
+Starts another background process that waits for the runtime limit ($runtime_limit) seconds and then sends a termination signal (TERM) to both capture_pid and `analyze it.
+
+Packet Capture and Analysis Simulation Explanation:
+
+The script utilizes two background processes:
+capture_packets: Simulates capturing packets and writing them to the queue directory.
+analyze_packets: Continuously checks the queue directory for new packets, analyzes them for suspicious content, and moves them to the analysis directory.
+Both processes check the runtime limit periodically and exit if reached.
+The grep command with a pattern like "DATA=.*baddata" simulates searching for specific content in the packet data. You can customize this pattern to match your desired criteria for suspicious content.
+The sleep commands in both functions introduce delays to simulate realistic time intervals between packet captures and analysis.
+Logical Schema:
+
++-------------------+      +----------------------+      +-------------------+
+| Capture Packets    | ----> | Packet Queue (Dir)   | ----> | Analyze Packets   |
++-------------------+      +----------------------+      +-------------------+
+                    |          (Files)           |                    |
+                    | (Simulated Packets)      |                    v
+                    v                          v (if suspicious content)
+                Captured packets              Alert: Suspicious packet
+                written to queue              detected and logged
+                                                Analyzed packets
+                                                moved to analysis dir
+TODO:
+
+Integrate with a real packet capture tool (e.g., tcpdump) instead of simulating packet capture.
+Implement more sophisticated packet analysis using libraries or tools like tcpflow for deeper inspection.
+Design a mechanism for configuring the network interface, capture duration, and suspicious content patterns.
+Enhance error handling to gracefully handle potential issues like file system errors or process failures.
+This script provides a basic framework for simulating packet capture and analysis. By extending it with real tools and functionalities, you can create a more robust network monitoring system for 
+detecting suspicious activity.
+
+
