@@ -1,0 +1,62 @@
+
+3Readers-WritersSEMAPHOREiniSCRIPTS.sh
+
+This script simulates a simple reservation system with concurrent access management using file locking. We'll explore concepts like file locking (flock), 
+background processes, database initialization, and simulating database operations.
+
+Concepts and Commands:
+
+touch command: Creates an empty file.
+[ -f $file ]: Checks if a file exists and is a regular file.
+echo command: Outputs text to the console or a file (used here for database population).
+Background processes (&): Started processes that run concurrently with the main script.
+wait command: Waits for all background processes to finish before continuing.
+Script Logic:
+
+Environment Initialization:
+
+Defines the path to the lock file (database_lock) and database file (database).
+Uses touch $database_lock to ensure the lock file exists before script execution.
+Checks if the database file ($database) exists using [ -f $database ].
+If the database file doesn't exist:
+Creates the database file and writes a header row with column names using echo.
+Appends three initial reservation entries with IDs, customer names, and destinations using echo >>.
+write_to_database function:
+
+Explained in the previous example. (Refer to explanation for write_to_database function)
+read_from_database function:
+
+Explained in the previous example. (Refer to explanation for read_from_database function)
+Simulating Writer Access:
+
+Starts a background process (&) using a subshell ((...)).
+Acquires an exclusive lock (flock -x 200) on the lock file, preventing concurrent writes.
+Prints a message indicating a writer is requesting access.
+Calls the write_to_database function to add a new reservation entry with an ID, customer name, and destination to the database.
+Simulating Reader Access:
+
+Uses a loop to create five background processes (&), each representing a reader.
+Inside each loop iteration:
+Acquires a shared lock (flock -s 200) on the lock file, allowing concurrent reading.
+Prints a message indicating a reader (with an ID) is requesting access.
+Calls the read_from_database function to read the current database content (all reservation entries).
+Wait for Processes:
+
+Uses wait to wait for all background processes (writer and readers) to finish.
+Logical Schema (Similar to the previous example):
+
+The logical schema remains the same as the previous example, demonstrating exclusive access for writers and shared access for readers using file locking on the lock file (database_lock) 
+to manage database access and prevent data corruption.
+
+Improvements:
+
+Database Initialization: This script enhances the previous example by checking for the database file's existence and populating it with initial data if it's missing.
+Simulating Realistic Data: The initial database entries represent sample reservations with IDs, customer names, and destinations, showcasing a more realistic scenario.
+
+TODO:
+
+Extend the script to allow functionalities like deleting reservations, searching by specific criteria, and user input for new reservations.
+Implement error handling for potential issues like lock acquisition failures or database access errors.
+Consider using a more robust database solution like SQLite for real-world applications, replacing the text file database with a structured database management system.
+This script provides a foundation for building a simple reservation system with concurrent access control using file locking. By further developing these concepts, you can create 
+more elaborate and secure systems for managing shared data resources.
