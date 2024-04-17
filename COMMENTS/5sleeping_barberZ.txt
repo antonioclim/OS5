@@ -1,0 +1,122 @@
+5sleeping_barberZ.sh
+
+
+This script simulates a barber shop scenario with a limited waiting area using file locking in Bash. We'll explore concepts like file locking (flock), background processes, simulating customer arrivals and barber actions, and managing a customer queue.
+
+Concepts and Commands:
+
+touch command: Creates an empty file.
+wc -l < file: Counts the number of lines in a file (used here to check the queue length).
+head -n 1 file: Outputs the first line of a file (used here to peek at the first customer).
+sed -i '1d' file: In-place edit (edits the file itself) to delete the first line (used here to remove the first customer from the queue).
+Background processes (&): Started processes that run concurrently with the main script.
+wait command: Waits for all background processes to finish before continuing.
+Script Logic:
+
+Configuration:
+
+Defines MAX_WAITING_CUSTOMERS: Maximum number of customers allowed in the waiting area.
+Defines TOTAL_CUSTOMERS: Total number of customers to be simulated.
+Defines paths for:
+mutex_lock: File used for mutual exclusion (barber and customers).
+customer_queue: File used to store the customer queue.
+Shop Initialization:
+
+Uses touch to create the lock and queue files if they don't exist.
+Initializes an empty customer queue file (echo "" > "$customer_queue").
+barber function:
+
+local served=0: Variable to track served customers.
+Loops until served reaches TOTAL_CUSTOMERS.
+Acquires the lock (flock -x 200) to ensure exclusive access to shared resources (barber chair and queue).
+Checks if any customers are waiting (using wc -l to count queue lines).
+If customers are waiting:
+Reads the first customer ID from the queue using head -n 1.
+Prints messages indicating the haircut starts and finishes for the customer.
+Removes the first customer from the queue using sed -i '1d'.
+Increments served to track completed haircuts.
+If no customers are waiting:
+Prints a message indicating the barber is sleeping.
+Sleeps for a short duration (to simulate idle time).
+Releases the lock (flock -u 200).
+customer function:
+
+Takes a customer ID ($1) as an argument.
+Simulates customer arrival time with a delay (sleep $((id))).
+Acquires the lock (flock -x 200) to ensure exclusive access for checking the queue.
+Checks if there are available seats in the waiting area:
+If there are available seats (queue length less than MAX_WAITING_CUSTOMERS):
+Adds the customer ID to the end of the queue using >>.
+Prints a message indicating the customer arrives and enters the waiting room.
+If there are no available seats:
+Prints a message indicating the customer leaves due to a full waiting area.
+Releases the lock (flock -u 200).
+Sleeps for a short duration (sleep 5) before potentially retrying entry.
+Recursively calls customer $id to simulate retrying entry after waiting.
+Releases the lock (flock -u 200).
+Start Barber:
+
+Starts the barber function in a background process (&).
+Redirects file descriptor 200 to the lock file ("$mutex_lock") to ensure the barber acquires the lock first.
+Create Customers:
+
+Uses a loop to create TOTAL_CUSTOMERS customer processes (&) with IDs from 1 to TOTAL_CUSTOMERS. Each process calls the customer function with its ID.
+Wait for Processes:
+
+Uses wait to wait for all background processes (barber and customers) to finish.
+
+Logical Schema:
+
+The previous schema focused on the barber process acquiring the lock for mutual exclusion. Here's an enhanced version illustrating both barber and customer interactions with the lock and queue:
+
++-------------------+      +-------------------+        +----------------------+      +-------------------+      +-------------------+
+| Barber Process     | ----> | Mutex Lock File   | ----> | Customer Queue File | ----> | Haircutting         |      | Customer Process   |
++-------------------+      +-------------------+        +----------------------+      +-------------------+      +-------------------+
+                   | (Exclusive Lock)        |                         |                       |                     | (Exclusive Lock) |
+                   v                          v                         v                       v                     v (for checking queue)
+               Acquire Lock           Check Queue              Read Customer (if any)  Release Lock          Simulate Arrival Time |
+                                               Add Customer (if space)       Print messages            Acquire Lock           |
+                                               Remove Customer (after haircut) |                       Release Lock (if leaving) |
+                                                                               Retry entering (if full) |
+                                                                                               Release Lock (after retry) |
+Explanation:
+
+Barber Process:
+
+Acquires the lock (flock -x 200) before accessing the shared resources (barber chair and customer queue).
+Checks if there are waiting customers (using wc -l or head -n 1).
+If customers are waiting:
+Reads the first customer ID from the queue.
+Performs the haircut simulation (printing messages).
+Removes the customer from the queue.
+Releases the lock (flock -u 200).
+Customer Process:
+
+Simulates arrival time with a delay (sleep $((id))).
+Acquires the lock (flock -x 200) to ensure exclusive access for checking the queue availability.
+Checks if there are available seats in the waiting area.
+If there are available seats:
+Adds the customer ID to the queue.
+Prints a message indicating the customer arrives and enters the waiting area.
+Releases the lock (flock -u 200).
+If there are no available seats:
+Releases the lock (flock -u 200).
+Sleeps for a short duration before potentially retrying.
+Recursively calls customer $id to simulate retrying entry after waiting.
+Key Points:
+
+The barber acquires the lock for exclusive access when checking the queue, reading a customer, or performing a haircut. This ensures only one customer is served at a time.
+Customers acquire the lock for exclusive access only when checking the queue availability to avoid race conditions where multiple customers might try to add themselves simultaneously.
+Releasing the lock after critical sections (checking queue, adding/removing customer) is crucial to allow other processes (barber or customers) to acquire it and proceed.
+Additional Considerations:
+
+The current implementation assumes a single barber. For multiple barbers, the barber function would need modifications to handle concurrent haircuts.
+More complex queue management could be implemented using data structures like linked lists or arrays within the queue file.
+This enhanced logical schema and explanations provide a clearer understanding of how file locking coordinates barber and customer interactions in the barber shop simulation.
+
+
+
+
+
+
+
