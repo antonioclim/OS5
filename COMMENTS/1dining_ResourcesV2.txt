@@ -1,0 +1,117 @@
+1dining_ResourcesV2.sh
+
+This script demonstrates setting up an environment, acquiring locks on configuration files, and simulating service processes that require access to those files. 
+We'll explore concepts like file locking and background processes while ensuring proper lock release to prevent deadlocks.
+
+Concepts and Commands:
+
+getent passwd: Retrieves information about a user. Here, we use it to get the home directory of the current user.
+cut command: Extracts specific fields from text. Used to extract the home directory path from getent passwd output.
+mkdir -p: Creates a directory, including any missing parent directories.
+Configuration files: Files containing settings for applications or systems.
+File locking (flock): A mechanism to control access to files, ensuring only one process can modify them at a time.
+File descriptors: References to open files used by processes.
+Command Substitution: Backticks \ capture the output of a command and use it within another command (e.g., CONFIG_FILE1 definition).
+if statements: Control script flow based on conditions.
+echo: Prints messages to the console.
+sed command: Edits files in-place based on search patterns and replacements.
+sleep command: Suspends execution for a specified time.
+Background processes (&): Started processes that run concurrently with the main script.
+wait command: Waits for all background processes to finish before continuing.
+Script Logic:
+
+setup_environment function:
+
+Gets the current user's home directory.
+Defines a directory path (OS5) within the home directory.
+Creates the directory if it doesn't exist.
+Defines paths to two configuration files within the OS5 directory.
+Uses if statements to check if the configuration files exist:
+If a file is missing, it creates the file with initial content.
+acquire_lock function:
+
+Takes three arguments: file path, service ID, and an integer for the file descriptor.
+Attempts to acquire a lock on the file using flock -n within an eval construct (allows dynamic file descriptor assignment).
+If the lock acquisition fails:
+Prints an error message indicating the failure.
+Returns an exit code of 1.
+If the lock is acquired successfully:
+Prints a message indicating successful lock acquisition.
+Returns an exit code of 0.
+service_process function:
+
+Takes a service ID as an argument.
+Calculates dynamic file descriptors for the two configuration files.
+Calls acquire_lock to try acquiring locks on both configuration files.
+If the lock on the first file is acquired:
+Attempts to acquire the lock on the second file.
+If both locks are acquired:
+Prints a message indicating successful lock acquisition for both files.
+Uses sed to modify specific settings in both configuration files.
+Simulates some processing time using sleep.
+Prints a message indicating completion and lock release.
+Releases locks on both files using flock -u and closes the file descriptors.
+If the lock on the second file fails:
+Releases the first lock acquired.
+Prints a message indicating releasing the lock on the first file due to failure with the second.
+If the lock on the first file cannot be acquired:
+Prints an error message.
+
+Main Script Execution:
+
+Calls setup_environment to set up the initial environment.
+Starts a loop to launch 5 services in the background:
+Calls service_process for each service ID (1 to 5) with & to run it in the background.
+Introduces a 1-second delay between service creation to avoid potential deadlocks.
+Uses wait to wait for all background service processes to finish.
+Prints a message indicating all services have finished.
+
+logical schema for the script:
+
++--------------------+      +--------------------+      +--------------+
+|  Service 1        | <---- | release_lock(file1) | ----> | release_lock(file2) |
++--------------------+      +--------------------+      +--------------+
+                          |
+                          | (Continue execution)
+                          v
++--------------------+      +--------------------+  
+|  Service N        | ----> | acquire_lock(file1) | ----> | acquire_lock(file2) | (No - Wait)
++--------------------+      +--------------------+  
+                               | (Wait for lock release)
+                               v
++--------------------+      +--------------------+      +--------------+
+|  Service N        | ----> | acquire_lock(file1) | ----> | acquire_lock(file2) | (Yes)
++--------------------+      +--------------------+      +--------------+
+                               |
+                               | (Modify files, process)
+                               |
+                               v
++--------------------+      +--------------------+      +--------------+
+|  Service N        | <---- | release_lock(file1) | ----> | release_lock(file2) |
++--------------------+      +--------------------+      +--------------+
+                          |
+                          | (Continue execution)
+                          v
++----------------------+
+| All services finished |
++----------------------+
+Explanation:
+
+The schema shows two potential paths for Service N (any service after Service 1):
+Acquiring both locks: Similar to Service 1, Service N attempts to acquire locks on both files. If successful, it modifies the files, processes data, and releases the locks.
+Waiting for locks: If Service N attempts to acquire a lock on a file already locked by another service (e.g., Service 1), it will wait until the lock is released 
+before acquiring it itself. This ensures only one service modifies the files at a time.
+The "" symbol indicates a potential wait state for Service N if a lock is already acquired.
+The schema ends with a box indicating all services have finished execution.
+
+Additional Notes:
+
+Real-world scenarios might involve more complex locking strategies and error handling.
+This simplified schema focuses on the core logic of acquiring and releasing locks for concurrent file access.
+
+
+TODO:
+
+Explore advanced locking techniques like advisory locks.
+Implement error handling for potential issues like service failures.
+Consider using dedicated locking libraries for more complex scenarios.
